@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
     Board board(n, eta, seed);
 
     if (debug_mood)
-        // board.d_print();
-        board.print();
+        board.d_print();
+        // board.print();
     else 
         board.print();
 
