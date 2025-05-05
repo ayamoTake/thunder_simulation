@@ -30,7 +30,7 @@ public:
 class Board {
 public:
     vector<vector<Cell>> cells;
-    Board(int n, double eta) : eta(eta), pushed(n, vector<bool>(n, false)) { _init(n); }
+    Board(int n, double eta, int seed) : eta(eta), pushed(n, vector<bool>(n, false)), rand_select_gen(seed) { _init(n); }
     Index select();
     bool add_as_thunder(const Index& idx);
     double prob (const Index& idx) const;
@@ -41,13 +41,14 @@ public:
     bool ended() const { return will.empty(); }
     int row_size;
     int col_size;
-    double eta = 3;
+    double eta = 5;
 private:
     vector<Index> four_neighbor(const Index& tar) const;
     vector<vector<bool>> pushed;
     set<Index> _init_cell;
     deque<Index> will;
     mutable mt19937 rand_gen;
+    mutable mt19937 rand_select_gen;
 
     bool ok(const Index& tar) const;
     void _init(int n);
@@ -69,7 +70,6 @@ inline vector<Index> Board::four_neighbor(const Index& idx) const {
             ans.push_back(tmp);
         }
     }
-    shuffle(ans.begin(), ans.end(), rand_gen);
     return ans;
 }
 
@@ -81,7 +81,11 @@ inline bool Board::add_as_thunder(const Index& idx) {
     }
     cells[idx.r][idx.c].is_thunder = true;
     cells[idx.r][idx.c].around_ct = 4;
-    for (const Index& nei: four_neighbor(idx)) {
+
+    vector<Index> four_neis = four_neighbor(idx);
+    shuffle(four_neis.begin(), four_neis.end(), rand_gen);
+
+    for (const Index& nei: four_neis) {
         if (
             cells[nei.r][nei.c].is_thunder 
             || _init_cell.find(nei) != _init_cell.end()
@@ -148,7 +152,7 @@ inline Index Board::select() {
     partial_sum(ps.begin(), ps.end(), sums.begin());
 
     uniform_real_distribution<> dist(0.0, sums[n - 1]);
-    int r = dist(rand_gen);
+    int r = dist(rand_select_gen);
     int ans_idx = lower_bound(sums.begin(), sums.end(), r) - sums.begin();
 
     Index ans = *target[ans_idx];
@@ -176,11 +180,11 @@ inline void Board::d_print() const {
     for (int i = 0; i < row_size; i++) {
         for (int j = 0; j < col_size; j++) {
             if (cells[i][j].is_thunder) {
-                printf("\033[33m███\033[0m");
+                printf("\033[33m██\033[0m");
             } else if (pushed[i][j]) {
-                printf("%3d", (int) (prob({i, j}) / sum * 100));
+                printf("%02d", (int) (prob({i, j}) / sum * 100));
             } else {
-                printf("   ");
+                printf("  ");
             }
         }
         cout << endl;
@@ -190,12 +194,12 @@ inline void Board::d_print() const {
 inline void Board::print() const {
     cout << "\033[2J";
 
-    for (const auto& r: cells) {
-        for (const auto& c: r) {
-            if (c.is_thunder) {
-                cout << "\033[33m" << "██" << "\033[0m";
+    for (int i = 0; i < row_size; i++) {
+        for (int j = 0; j < col_size; j++) {
+            if (cells[i][j].is_thunder) {
+                printf("\033[33m██\033[0m");
             } else {
-                cout << "  ";
+                printf("  ");
             }
         }
         cout << endl;

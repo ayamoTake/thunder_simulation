@@ -8,10 +8,11 @@ void do_live(Board& board, bool debug_mood) {
     while(!is_reached) {
         Index next = board.select();
         is_reached = board.add_as_thunder(next);
-        if (debug_mood)
+        if (debug_mood) {
             board.d_print();
-        else 
+        } else {
             board.print();
+        }
         this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
@@ -22,6 +23,7 @@ int main(int argc, char** argv) {
     bool debug_mood = false;
     bool live_mood = false;
     double eta = 5;
+    int seed = 0;
 
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "-d") == 0) {
@@ -30,15 +32,18 @@ int main(int argc, char** argv) {
             live_mood = true;
         } else if (std::strcmp(argv[i], "-e") == 0) {
             eta = stof(argv[++i]);
+        } else if (std::strcmp(argv[i], "-s") == 0) {
+            seed = stoi(argv[++i]);
         } else {
             n = std::stoi(argv[i]);
         }
     }
 
-    Board board(n, eta);
+    Board board(n, eta, seed);
 
     if (debug_mood)
-        board.d_print();
+        // board.d_print();
+        board.print();
     else 
         board.print();
 
