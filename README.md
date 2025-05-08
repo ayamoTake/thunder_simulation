@@ -5,7 +5,7 @@
 https://www.youtube.com/watch?v=3mVXibo4MN0
 [![雷の形をシミュレーションする方法](https://img.youtube.com/vi/3mVXibo4MN0/0.jpg)](https://www.youtube.com/watch?v=3mVXibo4MN0)
 
-![Demo](./thunder3.mp4)
+![Demo](./demo.gif)
 
 ```
 $ gcc main.cpp -o main -Wall
