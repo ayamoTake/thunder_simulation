@@ -110,15 +110,15 @@ inline bool Board::add_as_thunder(const Index& idx) {
         cells[nei.r][nei.c].around_ct++;
         if (!pushed[nei.r][nei.c]) {
 
+            will.push_back(nei);
+            pushed[nei.r][nei.c] = true;
+
             if ((int)will.size() >= 15) {
                 auto to_pop_idx = min_element(will.begin(), will.end(), [&](auto a, auto b) {
                     return prob(a) < prob(b);
                 });
                 will.erase(to_pop_idx);
             }
-
-            will.push_back(nei);
-            pushed[nei.r][nei.c] = true;
         }
     }
 
