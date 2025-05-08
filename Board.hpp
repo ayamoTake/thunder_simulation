@@ -21,6 +21,10 @@ inline bool operator<(const Index& a, const Index&b) {
     return a.c < b.c;
 }
 
+inline double dist(const Index& a, const Index& b) {
+    return hypot(a.r - b.r, a.c - b.c);
+} 
+
 class Cell {
 public:
     bool is_thunder = false;
@@ -30,7 +34,7 @@ public:
 class Board {
 public:
     vector<vector<Cell>> cells;
-    Board(int n, double eta, int seed) : eta(eta), pushed(n, vector<bool>(n, false)), rand_select_gen(seed) { _init(n); }
+    Board(int n, double eta, int seed) : eta(eta), pushed(n, vector<bool>(n, false)), rand_select_gen(seed), _E_deno(pow(16, eta)) { _init(n); }
     Index select();
     bool add_as_thunder(const Index& idx);
     double prob (const Index& idx) const;
@@ -41,8 +45,17 @@ public:
     bool ended() const { return will.empty(); }
     int row_size;
     int col_size;
-    double eta = 5;
+    double eta = 3;
+    Index rob; /* 避雷針 */
 private:
+    // struct Comp {
+    //     Board* parent;
+    //     Comp(Board* _parnet) { parent = _parnet; }
+    //
+    //     bool operator()(const Index& a, const Index& b) {
+    //         return parent->prob(a) < parent->prob(b);
+    //     }
+    // };
     vector<Index> four_neighbor(const Index& tar) const;
     vector<vector<bool>> pushed;
     set<Index> _init_cell;
@@ -52,6 +65,9 @@ private:
 
     bool ok(const Index& tar) const;
     void _init(int n);
+    double _max_rob_dist = 0;
+    double _E_deno = 1;
+    double _D_deno = 1;
 };
 
 inline bool Board::ok(const Index& idx) const {
@@ -93,9 +109,14 @@ inline bool Board::add_as_thunder(const Index& idx) {
 
         cells[nei.r][nei.c].around_ct++;
         if (!pushed[nei.r][nei.c]) {
-            if (will.size() >= 10) {
-                will.pop_front();
+
+            if ((int)will.size() >= 15) {
+                auto to_pop_idx = min_element(will.begin(), will.end(), [&](auto a, auto b) {
+                    return prob(a) < prob(b);
+                });
+                will.erase(to_pop_idx);
             }
+
             will.push_back(nei);
             pushed[nei.r][nei.c] = true;
         }
@@ -119,7 +140,10 @@ inline int Board::e2(const Index& idx) const {
 }
 
 inline double Board::prob(const Index& idx) const {
-    return pow(1 - e2(idx) / 16.0, eta) * 100;
+    double E_nume = pow(16.0 - e2(idx), eta);
+    double D_nume = pow(_max_rob_dist - dist(rob, idx), eta);
+    double w1 = 0.5, w2 = 1.0 - w1;
+    return (w1 * E_nume / _E_deno + w2 * D_nume / _D_deno) * 1000.0;
 }
 
 inline void Board::_init(int n) {
@@ -129,13 +153,20 @@ inline void Board::_init(int n) {
 
     for (int i = 0; i < col_size; i++) {
         _init_cell.insert({0, i});
+        cells[0][i].is_thunder = true;
+        cells[0][i].around_ct = 4;
     }
     int sx = col_size / 2;
     _init_cell.insert({1, sx});
+    add_as_thunder({1, sx});
 
-    for (const Index& idx: _init_cell) {
-        add_as_thunder(idx);
-    }
+    rob = {row_size - 1, sx};
+    _max_rob_dist = max(dist(rob, {0, 0}), dist(rob, {0, col_size - 1}));
+    _D_deno = pow(_max_rob_dist, eta);
+
+    // for (const Index& idx: _init_cell) {
+    //     add_as_thunder(idx);
+    // }
 }
 
 inline Index Board::select() {
@@ -173,15 +204,17 @@ inline void Board::d_print() const {
         will_set.insert(idx);
         double p = prob(idx);
         sum += p;
-        // cout << p << endl;
+        cout << p << endl;
     }
-    // cout << "sum: " << sum << endl;
+    cout << "sum: " << sum << endl;
 
     for (int i = 0; i < row_size; i++) {
         for (int j = 0; j < col_size; j++) {
             if (cells[i][j].is_thunder) {
                 printf("\033[33m██\033[0m");
-            } else if (pushed[i][j]) {
+            } else if (i == rob.r && j == rob.c) {
+                printf("\033[31m██\033[0m");
+            } else if (will_set.find({i, j}) != will_set.end()) {
                 printf("%02d", (int) (prob({i, j}) / sum * 100));
             } else {
                 printf("  ");
@@ -198,6 +231,8 @@ inline void Board::print() const {
         for (int j = 0; j < col_size; j++) {
             if (cells[i][j].is_thunder) {
                 printf("\033[33m██\033[0m");
+            } else if (i == rob.r && j == rob.c) {
+                printf("\033[31m██\033[0m");
             } else {
                 printf("  ");
             }

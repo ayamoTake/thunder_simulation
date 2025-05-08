@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
     bool debug_mood = false;
     bool live_mood = false;
-    double eta = 5;
+    double eta = 3;
     int seed = 0;
 
     for (int i = 1; i < argc; i++) {
